@@ -24,10 +24,6 @@ def plot_predicted_vs_actual(y_true, y_pred):
   plt.show()
 
 def main():
-  import pandas as pd
-  from sklearn.linear_model import LinearRegression
-  from sklearn.preprocessing import StandardScaler
-    
   # --- Step 1: Load filtered test and training data ---
   train_df = pd.read_csv('filtered_train_data.csv')
   test_df = pd.read_csv('filtered_test_data.csv')
@@ -73,7 +69,8 @@ def main():
       predicted_winner_index = group['predicted_finish_time'].idxmin()
       return group.loc[predicted_winner_index, 'won'] == 1
     
-  results = test_df.groupby('race_id').apply(predict_winner)
+  # Bug fix #7: include_groups=False avoids DeprecationWarning in pandas 2.x
+  results = test_df.groupby('race_id').apply(predict_winner, include_groups=False)
     
   # --- Step 9: Calculate accuracy ---
   accuracy = results.mean()
