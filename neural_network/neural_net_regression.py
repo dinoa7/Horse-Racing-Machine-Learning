@@ -109,8 +109,9 @@ for i, (train_idx, test_idx) in enumerate(skf.split(data_org, target_org)):
     train_dataset = TensorDataset(train_data, y_train)
     val_dataset = TensorDataset(val_data, y_val)
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True)
+    pin = torch.cuda.is_available()
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=pin)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=pin)
 
     fold_t_loss = []
     fold_v_loss = []
@@ -169,7 +170,7 @@ y_test_tensor = torch.tensor(y_test.to_numpy(), dtype=torch.float32)
 
 y_preds = []
 test_dataset = TensorDataset(x_test_tensor, y_test_tensor)
-test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, pin_memory=True)
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, pin_memory=torch.cuda.is_available())
 
 model.eval()
 with torch.no_grad():
