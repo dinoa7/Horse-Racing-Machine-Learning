@@ -32,3 +32,8 @@ columns_discarded = [
     'time1_x', 'time2_x', 'time3_x', 'time4_x', 'time5_x', 'time6_x',
     'place_odds'
 ]
+
+RUN Commands
+pip install torch pandas numpy scikit-learn matplotlib
+cd "Horse Racing Machine Learning\neural_network"
+python neural_net_regression.py
