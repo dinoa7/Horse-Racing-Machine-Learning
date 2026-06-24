@@ -25,7 +25,7 @@ dataset_csv = pd.read_csv("cleaned_race_data.csv")
 
 # Removed 'won' (data leakage — directly encodes finish order) and 'race_id' is
 # kept only for grouping, not as a model feature.
-filt_dataset_csv = dataset_csv[["race_id","won","finish_time","draw","horse_rating",
+filt_dataset_csv = dataset_csv[["race_id","horse_id","won","finish_time","draw","horse_rating",
                            "declared_weight","horse_age","actual_weight","win_odds","distance","race_class"]]
 
 #************************Data Setup************************
@@ -36,14 +36,18 @@ data_org = pd.get_dummies(data_org,columns=["race_class"],drop_first=False,dtype
 target_org = data_org["finish_time"]
 data_org = data_org.drop(columns="finish_time")
 
-# Keep race_id and won for post-prediction evaluation only — not model features
+# Keep these columns for post-prediction evaluation only — not model features.
+# win_odds is excluded from features to keep the model independent of market prices,
+# which is required for the EV analysis to be meaningful.
 race_id_col = data_org["race_id"]
 won_col = data_org["won"]
-data_org = data_org.drop(columns=["race_id", "won"])
+horse_id_col = data_org["horse_id"]
+win_odds_col = data_org["win_odds"]
+data_org = data_org.drop(columns=["race_id", "won", "horse_id", "win_odds"])
 
 #************************Data Split************************
-data_org, x_test, target_org, y_test, race_id_train, race_id_test, won_train, won_test = train_test_split(
-    data_org, target_org, race_id_col, won_col, test_size=0.1, random_state=42)
+data_org, x_test, target_org, y_test, race_id_train, race_id_test, won_train, won_test, horse_id_train, horse_id_test, win_odds_train, win_odds_test = train_test_split(
+    data_org, target_org, race_id_col, won_col, horse_id_col, win_odds_col, test_size=0.1, random_state=42)
 x_metric_dataset = x_test.copy(True)
 y_tst_metric = y_test.copy(True).to_numpy()
 
@@ -213,6 +217,8 @@ with torch.no_grad():
 x_metric_dataset = x_metric_dataset.reset_index(drop=True)
 x_metric_dataset["race_id"] = race_id_test.reset_index(drop=True)
 x_metric_dataset["won"] = won_test.reset_index(drop=True)
+x_metric_dataset["horse_id"] = horse_id_test.reset_index(drop=True)
+x_metric_dataset["win_odds"] = win_odds_test.reset_index(drop=True)
 x_metric_dataset["Finish_Time"] = y_preds
 
 #************************Accuracy************************
@@ -226,3 +232,22 @@ print(f"Prediction Accuracy: {accuracy:.4f} ({results.sum()} correct out of {len
 
 #************************More Plot************************
 plot_predicted_vs_actual(y_tst_metric, y_preds)
+
+#************************Export for C++ Monte Carlo simulation************************
+residuals = np.array(y_preds) - y_tst_metric
+residual_sigma = float(np.std(residuals))
+print(f"Residual sigma (std of prediction error on test set): {residual_sigma:.4f} s")
+
+sim_input = pd.DataFrame({
+    "race_id":               x_metric_dataset["race_id"].values,
+    "horse_id":              x_metric_dataset["horse_id"].values,
+    "predicted_finish_time": x_metric_dataset["Finish_Time"].values,
+    "actual_finish_time":    y_tst_metric,
+    "won":                   x_metric_dataset["won"].values,
+    "win_odds":              x_metric_dataset["win_odds"].values,
+})
+
+sim_input.to_csv("../general_dataset/sim_input.csv", index=False)
+with open("../general_dataset/residual_sigma.txt", "w") as f:
+    f.write(str(residual_sigma))
+print("Exported sim_input.csv and residual_sigma.txt to general_dataset/")
