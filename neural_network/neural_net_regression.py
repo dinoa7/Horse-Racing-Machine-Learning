@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.insert(1,"../linear_regression")
 from linear_regression_QOL import plot_predicted_vs_actual
+from tqdm import tqdm
 
 
 ##************************Data Grab************************
@@ -57,10 +58,13 @@ class NeuralNet(nn.Module):
         super(NeuralNet,self).__init__()
         self.mlayers = nn.Sequential(
             nn.Linear(features,64),
+            nn.BatchNorm1d(64),
             nn.LeakyReLU(),
             nn.Linear(64,32),
+            nn.BatchNorm1d(32),
             nn.Dropout(0.2),
             nn.Linear(32,16),
+            nn.BatchNorm1d(16),
             nn.LeakyReLU(),
             nn.Linear(16,8),
             nn.Dropout(0.2),
@@ -125,7 +129,8 @@ for i, (train_idx, test_idx) in enumerate(skf.split(data_org, target_org)):
     fold_v_loss = []
 
     #************************TRAIN + VALIDATE PER EPOCH************************
-    for epoch in range(EPOCHS):
+    pbar = tqdm(range(EPOCHS), desc=f"Fold {i+1}/{skf.n_splits}", unit="epoch")
+    for epoch in pbar:
         model.train()
         train_loss = 0.0
 
@@ -154,6 +159,7 @@ for i, (train_idx, test_idx) in enumerate(skf.split(data_org, target_org)):
         epoch_val_loss = val_loss / len(val_loader.dataset)
         fold_v_loss.append(epoch_val_loss)
         scheduler.step(epoch_val_loss)
+        pbar.set_postfix(train_mse=f"{epoch_train_loss:.4f}", val_mse=f"{epoch_val_loss:.4f}")
 
     mse_avg = val_loss / len(val_loader.dataset)
     print(f"   val mse: {mse_avg:.4f}")
@@ -183,7 +189,8 @@ all_train_dataset = TensorDataset(all_train_data, all_train_target)
 all_train_loader = DataLoader(all_train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=torch.cuda.is_available())
 
 print("\nTraining final model on full training set...")
-for epoch in range(EPOCHS):
+pbar = tqdm(range(EPOCHS), desc="Final model", unit="epoch")
+for epoch in pbar:
     final_model.train()
     epoch_loss = 0.0
     for data, target in all_train_loader:
@@ -194,7 +201,9 @@ for epoch in range(EPOCHS):
         epoch_loss += loss.item() * data.size(0)
         loss.backward()
         final_optimizer.step()
-    final_scheduler.step(epoch_loss / len(all_train_loader.dataset))
+    train_mse = epoch_loss / len(all_train_loader.dataset)
+    final_scheduler.step(train_mse)
+    pbar.set_postfix(train_mse=f"{train_mse:.4f}")
 
 #************************Model Test Phase************************
 x_test_scaled = final_scaler.transform(x_test.values)

@@ -55,7 +55,7 @@ columns_discarded = [
 ## Step 1 — Install Python dependencies
 
 ```bash
-pip install torch pandas numpy scikit-learn matplotlib
+pip install torch pandas numpy scikit-learn matplotlib tqdm
 ```
 
 ## Step 2 — Train the model
