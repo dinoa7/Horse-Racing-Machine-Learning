@@ -15,21 +15,21 @@ static void print_usage(const char* prog) {
         << "Usage: " << prog << " [options]\n\n"
         << "Options:\n"
         << "  --input      PATH   sim_input.csv path  "
-           "(default: ../general_dataset/sim_input.csv)\n"
+           "(default: ../../general_dataset/sim_input.csv)\n"
         << "  --output     PATH   output CSV path     "
-           "(default: ../general_dataset/sim_output.csv)\n"
+           "(default: ../../general_dataset/sim_output.csv)\n"
         << "  --sigma      FLOAT  residual std dev in seconds (overrides --sigma-file)\n"
         << "  --sigma-file PATH   file containing residual sigma "
-           "(default: ../general_dataset/residual_sigma.txt)\n"
+           "(default: ../../general_dataset/residual_sigma.txt)\n"
         << "  --trials     N      Monte Carlo trials per race (default: 10000)\n"
         << "  --seed       N      RNG seed for reproducibility  (default: 42)\n"
         << "  --help              Print this message\n";
 }
 
 int main(int argc, char* argv[]) {
-    std::string input_path  = "../general_dataset/sim_input.csv";
-    std::string output_path = "../general_dataset/sim_output.csv";
-    std::string sigma_file  = "../general_dataset/residual_sigma.txt";
+    std::string input_path  = "../../general_dataset/sim_input.csv";
+    std::string output_path = "../../general_dataset/sim_output.csv";
+    std::string sigma_file  = "../../general_dataset/residual_sigma.txt";
     double      sigma       = -1.0;   // sentinel: read from file
     int         n_trials    = 10000;
     uint64_t    seed        = 42;
